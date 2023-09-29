@@ -188,12 +188,15 @@ namespace Unity.BossRoom.Gameplay.Actions
 
                 m_Queue[0].TimeStarted = Time.time;
                 bool play = m_Queue[0].OnStart(m_ServerCharacter);
+                
                 if (!play)
                 {
                     //actions that exited out in the "Start" method will not have their End method called, by design.
                     AdvanceQueue(false); // note: this will call StartAction() recursively if there's more stuff in the queue ...
                     return;              // ... so it's important not to try to do anything more here
                 }
+
+                m_Queue[0].UseMana(m_ServerCharacter);
 
                 // if this Action is interruptible, that means movement should interrupt it... character needs to be stationary for this!
                 // So stop any movement that's already happening before we begin

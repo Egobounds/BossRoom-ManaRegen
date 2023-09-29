@@ -55,6 +55,7 @@ namespace Unity.BossRoom.Gameplay.GameplayObjects.Character
                     playerData.PlayerPosition = movementTransform.position;
                     playerData.PlayerRotation = movementTransform.rotation;
                     playerData.CurrentHitPoints = m_CachedServerCharacter.HitPoints;
+                    playerData.CurrentManaPoints = m_CachedServerCharacter.ManaPoints;
                     playerData.HasCharacterSpawned = true;
                     SessionManager<SessionPlayerData>.Instance.SetPlayerData(OwnerClientId, playerData);
                 }

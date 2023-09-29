@@ -147,6 +147,15 @@ namespace Unity.BossRoom.Gameplay.Actions
         /// <param name="collision"></param>
         public virtual void CollisionEntered(ServerCharacter serverCharacter, Collision collision) { }
 
+        public void UseMana(ServerCharacter serverCharacter)
+        {
+            ManaReceiver manaReceiver = serverCharacter.GetComponent<ManaReceiver>();
+            if (manaReceiver != null)
+            {
+                manaReceiver.ReceiveMana(serverCharacter, -Config.ManaCost);
+            }
+        }
+
         public enum BuffableValue
         {
             PercentHealingReceived, // unbuffed value is 1.0. Reducing to 0 would mean "no healing". 2 would mean "double healing"

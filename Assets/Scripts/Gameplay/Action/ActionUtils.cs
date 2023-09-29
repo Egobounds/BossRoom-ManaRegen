@@ -79,6 +79,26 @@ namespace Unity.BossRoom.Gameplay.Actions
             return numResults;
         }
 
+        public static int DetectEntitiesInRange(bool wantPcs, bool wantNpcs, Collider attacker, float range, out RaycastHit[] results)
+        {
+            if (s_PCLayer == -1)
+                s_PCLayer = LayerMask.NameToLayer("PCs");
+            if (s_NpcLayer == -1)
+                s_NpcLayer = LayerMask.NameToLayer("NPCs");
+
+            int mask = 0;
+            if (wantPcs)
+                mask |= (1 << s_PCLayer);
+            if (wantNpcs)
+                mask |= (1 << s_NpcLayer);
+
+            int numResults = Physics.SphereCastNonAlloc(attacker.transform.position, range,
+                Vector3.up, s_Hits, 0.0f, mask);
+
+            results = s_Hits;
+            return numResults;
+        }
+
         /// <summary>
         /// Does this NetId represent a valid target? Used by Target Action. The target needs to exist, be a
         /// NetworkCharacterState, and be alive. In the future, it will be any non-dead IDamageable.

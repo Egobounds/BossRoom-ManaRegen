@@ -24,6 +24,9 @@ namespace Unity.BossRoom.Gameplay.UI
         bool m_DisplayHealth;
 
         [SerializeField]
+        bool m_DisplayMana;
+
+        [SerializeField]
         bool m_DisplayName;
 
         [SerializeField]
@@ -40,6 +43,9 @@ namespace Unity.BossRoom.Gameplay.UI
         NetworkHealthState m_NetworkHealthState;
 
         [SerializeField]
+        NetworkManaState m_NetworkManaState;
+
+        [SerializeField]
         NetworkNameState m_NetworkNameState;
 
         ServerCharacter m_ServerCharacter;
@@ -50,6 +56,9 @@ namespace Unity.BossRoom.Gameplay.UI
 
         [SerializeField]
         IntVariable m_BaseHP;
+
+        [SerializeField]
+        int m_BaseMana;
 
         [Tooltip("UI object(s) will appear positioned at this transforms position.")]
         [SerializeField]
@@ -108,12 +117,18 @@ namespace Unity.BossRoom.Gameplay.UI
                 Assert.IsNotNull(m_NetworkHealthState, "A NetworkHealthState component needs to be attached!");
             }
 
+            if (m_DisplayMana)
+            {
+                Assert.IsNotNull(m_NetworkManaState, "A NetworkManaState component needs to be attached!");
+            }
+
             m_VerticalOffset = new Vector3(0f, m_VerticalScreenOffset, 0f);
 
             // if PC, find our graphics transform and update health through callbacks, if displayed
             if (TryGetComponent(out m_ClientAvatarGuidHandler) && TryGetComponent(out m_NetworkAvatarGuidState))
             {
                 m_BaseHP = m_NetworkAvatarGuidState.RegisteredAvatar.CharacterClass.BaseHP;
+                m_BaseMana = m_NetworkAvatarGuidState.RegisteredAvatar.CharacterClass.BaseMana;
 
                 if (m_ServerCharacter.clientCharacter)
                 {
@@ -129,6 +144,12 @@ namespace Unity.BossRoom.Gameplay.UI
                     m_NetworkHealthState.HitPointsReplenished += DisplayUIHealth;
                     m_NetworkHealthState.HitPointsDepleted += RemoveUIHealth;
                 }
+
+                if (m_DisplayMana)
+                {
+                    m_NetworkManaState.ManaPointsReplenished += DisplayUIMana;
+                    m_NetworkManaState.ManaPointsDepleted += RemoveUIMana;
+                }
             }
 
             if (m_DisplayName)
@@ -140,24 +161,41 @@ namespace Unity.BossRoom.Gameplay.UI
             {
                 DisplayUIHealth();
             }
+
+            if (m_DisplayMana)
+            {
+                DisplayUIMana();
+            }
         }
 
         void OnDisable()
         {
-            if (!m_DisplayHealth)
+            if (m_DisplayHealth)
             {
-                return;
+                if (m_NetworkHealthState != null)
+                {
+                    m_NetworkHealthState.HitPointsReplenished -= DisplayUIHealth;
+                    m_NetworkHealthState.HitPointsDepleted -= RemoveUIHealth;
+                }
+
+                if (m_ClientAvatarGuidHandler)
+                {
+                    m_ClientAvatarGuidHandler.AvatarGraphicsSpawned -= TrackGraphicsTransform;
+                }
             }
 
-            if (m_NetworkHealthState != null)
+            if (m_DisplayMana)
             {
-                m_NetworkHealthState.HitPointsReplenished -= DisplayUIHealth;
-                m_NetworkHealthState.HitPointsDepleted -= RemoveUIHealth;
-            }
+                if (m_NetworkManaState != null)
+                {
+                    m_NetworkManaState.ManaPointsReplenished -= DisplayUIMana;
+                    m_NetworkManaState.ManaPointsDepleted -= RemoveUIMana;
+                }
 
-            if (m_ClientAvatarGuidHandler)
-            {
-                m_ClientAvatarGuidHandler.AvatarGraphicsSpawned -= TrackGraphicsTransform;
+                if (m_ClientAvatarGuidHandler)
+                {
+                    m_ClientAvatarGuidHandler.AvatarGraphicsSpawned -= TrackGraphicsTransform;
+                }
             }
         }
 
@@ -193,6 +231,22 @@ namespace Unity.BossRoom.Gameplay.UI
             m_UIStateActive = true;
         }
 
+        void DisplayUIMana()
+        {
+            if (m_NetworkManaState == null)
+            {
+                return;
+            }
+
+            if (m_UIState == null)
+            {
+                SpawnUIState();
+            }
+
+            m_UIState.DisplayMana(m_NetworkManaState.ManaPoints, m_BaseMana);
+            m_UIStateActive = true;
+        }
+
         void SpawnUIState()
         {
             m_UIState = Instantiate(m_UIStatePrefab, m_CanvasTransform);
@@ -211,6 +265,18 @@ namespace Unity.BossRoom.Gameplay.UI
             yield return new WaitForSeconds(k_DurationSeconds);
 
             m_UIState.HideHealth();
+        }
+
+        void RemoveUIMana()
+        {
+            StartCoroutine(WaitToHideManaBar());
+        }
+
+        IEnumerator WaitToHideManaBar()
+        {
+            yield return new WaitForSeconds(k_DurationSeconds);
+
+            m_UIState.HideMana();
         }
 
         void TrackGraphicsTransform(GameObject graphicsGameObject)
